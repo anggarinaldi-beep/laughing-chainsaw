@@ -17,9 +17,10 @@
 7. [Install & Jalankan OpenClaw](#7-install--jalankan-openclaw)
 8. [Navigasi OpenClaw Dashboard](#8-navigasi-openclaw-dashboard)
 9. [Upload Dokumen & Mulai Chat](#9-upload-dokumen--mulai-chat)
-10. [Menjalankan Ulang Setelah Restart PC](#10-menjalankan-ulang-setelah-restart-pc)
-11. [Troubleshooting & Error yang Pernah Ditemui](#11-troubleshooting--error-yang-pernah-ditemui)
-12. [Ringkasan Perintah Penting](#12-ringkasan-perintah-penting)
+10. [Koneksi Bot Telegram](#10-koneksi-bot-telegram)
+11. [Menjalankan Ulang Setelah Restart PC](#11-menjalankan-ulang-setelah-restart-pc)
+12. [Troubleshooting & Error yang Pernah Ditemui](#12-troubleshooting--error-yang-pernah-ditemui)
+13. [Ringkasan Perintah Penting](#13-ringkasan-perintah-penting)
 
 ---
 
@@ -356,11 +357,134 @@ Buat tabel ringkasan dari semua item yang ada di laporan ini
 
 ---
 
-## 10. Menjalankan Ulang Setelah Restart PC
+## 10. Koneksi Bot Telegram
+
+Setelah OpenClaw berjalan, Anda bisa menghubungkannya ke bot Telegram sehingga bisa chat dengan AI dari HP kapan saja selama PC menyala.
+
+### Langkah 10.1 — Buat Bot Telegram via @BotFather
+
+1. Buka aplikasi **Telegram** di HP atau PC
+2. Di kolom pencarian ketik **@BotFather**, pilih akun dengan centang biru ✓
+3. Klik **Start** atau ketik `/start`
+4. Ketik perintah:
+   ```
+   /newbot
+   ```
+5. BotFather tanya **nama bot** — ketik nama bebas, contoh: `Asisten Dokumen Saya`
+6. BotFather tanya **username bot** — harus diakhiri kata `bot`, contoh: `asisten_dokumen_bot`
+7. Jika username tersedia, BotFather memberikan **TOKEN** seperti:
+   ```
+   1234567890:AAFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   ```
+8. **Simpan TOKEN** — dibutuhkan di langkah berikutnya
+
+### Langkah 10.2 — Aktifkan Izin Menjalankan Script PowerShell
+
+> ⚠️ Langkah ini wajib dilakukan sekali. Jika dilewati, akan muncul error:
+> ```
+> openclaw.ps1 cannot be loaded because running scripts is disabled on this system.
+> PSSecurityException: UnauthorizedAccess
+> ```
+
+Buka **PowerShell Administrator baru** (jangan di jendela yang menjalankan OpenClaw), lalu ketik:
+
+```powershell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+Jika muncul konfirmasi, ketik `Y` lalu **Enter**.
+
+### Langkah 10.3 — Konfigurasi Telegram via OpenClaw
+
+Di PowerShell Administrator yang sama, jalankan:
+
+```powershell
+openclaw configure --section channels
+```
+
+Wizard konfigurasi akan muncul. Ikuti langkah-langkahnya:
+
+1. **"Where will the Gateway run?"** → pilih sudah ada **Local (this machine)** → tekan **Enter**
+2. **"Select a channel"** → pilih **Telegram** → tekan **Enter**
+3. **Masukkan Bot Token** dari BotFather → tekan **Enter**
+4. **"Configure DM access policies now?"** → pilih **No** (default) → tekan **Enter**
+5. Tunggu hingga muncul: **`Configure complete.`**
+
+### Langkah 10.4 — Restart OpenClaw
+
+Kembali ke jendela PowerShell yang menjalankan OpenClaw, tekan **Ctrl+C** untuk stop, lalu jalankan ulang:
+
+```powershell
+ollama launch openclaw
+```
+
+Pilih `qwen2.5:7b` jika diminta.
+
+### Langkah 10.5 — Verifikasi di Dashboard
+
+Buka browser → `http://localhost:18789/#token=ollama` → klik menu **Channels**.
+
+Status Telegram harus menunjukkan:
+```
+Configured   Yes
+Running      Yes
+Mode         polling
+Probe ok
+```
+
+### Langkah 10.6 — Approve Pairing
+
+1. Buka Telegram → cari bot yang baru dibuat → klik **Start**
+2. Bot akan membalas dengan pesan pairing:
+   ```
+   OpenClaw: access not configured.
+   Your Telegram user id: XXXXXXXXXX
+   Pairing code: XXXXXXXX
+   Ask the bot owner to approve with:
+   openclaw pairing approve telegram XXXXXXXX
+   ```
+3. Salin perintah approve tersebut, lalu jalankan di **PowerShell Administrator baru**:
+   ```powershell
+   openclaw pairing approve telegram XXXXXXXX
+   ```
+   (ganti `XXXXXXXX` dengan pairing code yang muncul di Telegram Anda)
+
+### Langkah 10.7 — Test Bot
+
+Kirim pesan ke bot di Telegram:
+```
+Halo, kamu siapa?
+```
+
+Bot akan merespons menggunakan model **qwen2.5:7b** yang berjalan di PC Anda! 🎉
+
+### Alur sistem lengkap
+
+```
+HP Anda (Telegram)
+      │  kirim pesan
+      ▼
+Bot Telegram (nama bot Anda)
+      │
+      ▼
+OpenClaw Gateway (localhost:18789)
+      │
+      ▼
+Ollama + qwen2.5:7b (PC Anda)
+      │  generate jawaban
+      ▼
+Jawaban dikirim balik ke Telegram
+```
+
+> **Catatan:** Bot hanya aktif selama PC menyala dan OpenClaw berjalan. Jika PC mati atau PowerShell ditutup, bot tidak akan merespons.
+
+---
+
+## 11. Menjalankan Ulang Setelah Restart PC
 
 Ollama otomatis berjalan di background saat Windows startup (ikon llama di System Tray pojok kanan bawah). Namun **OpenClaw perlu dijalankan manual** setiap kali ingin digunakan.
 
-### Langkah setiap kali ingin menggunakan OpenClaw
+### Langkah setiap kali ingin menggunakan OpenClaw + Bot Telegram
 
 1. Klik **Start** → ketik `powershell` → klik kanan → **Run as administrator**
 2. Ketik:
@@ -380,7 +504,7 @@ Biarkan jendela ini tetap terbuka di background.
 
 ---
 
-## 11. Troubleshooting & Error yang Pernah Ditemui
+## 12. Troubleshooting & Error yang Pernah Ditemui
 
 ### ❌ Error: `openclaw is not installed and npm was not found`
 
@@ -507,7 +631,52 @@ Ini normal — model 7B memang membutuhkan resource yang signifikan. Tips:
 
 ---
 
-## 12. Ringkasan Perintah Penting
+### ❌ Error: `openclaw.ps1 cannot be loaded... running scripts is disabled`
+
+**Pesan lengkap:**
+```
+openclaw : File C:\Users\PC\AppData\Roaming\npm\openclaw.ps1 cannot be loaded
+because running scripts is disabled on this system.
+PSSecurityException: UnauthorizedAccess
+```
+
+**Penyebab:** Windows memblokir script PowerShell karena security policy default.
+
+**Solusi:** Jalankan sekali di PowerShell Administrator:
+```powershell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+Ketik `Y` jika diminta konfirmasi, lalu jalankan ulang perintah openclaw.
+
+---
+
+### ❌ Bot Telegram tidak merespons setelah `/start`
+
+**Penyebab:** Pairing belum di-approve atau OpenClaw tidak berjalan.
+
+**Solusi:**
+1. Pastikan PowerShell dengan `ollama launch openclaw` masih terbuka dan berjalan
+2. Cek dashboard → Channels → Telegram → Running harus **Yes**
+3. Jika muncul pesan pairing code di Telegram, jalankan approve di PowerShell baru:
+   ```powershell
+   openclaw pairing approve telegram KODEPAIRING
+   ```
+
+---
+
+### ❌ `Channel config schema unavailable` di dashboard Channels
+
+**Penyebab:** Token Telegram belum dikonfigurasi via terminal (dashboard tidak support input token langsung).
+
+**Solusi:** Konfigurasi harus dilakukan via terminal, bukan via dashboard:
+```powershell
+openclaw configure --section channels
+```
+Ikuti wizard yang muncul dan masukkan Bot Token di sana.
+
+---
+
+## 13. Ringkasan Perintah Penting
 
 | Perintah | Fungsi |
 |----------|--------|
@@ -521,6 +690,9 @@ Ini normal — model 7B memang membutuhkan resource yang signifikan. Tips:
 | `ollama rm qwen2.5:7b` | Hapus model (bebaskan storage) |
 | `node --version` | Verifikasi Node.js terinstall |
 | `git --version` | Verifikasi Git terinstall |
+| `openclaw configure --section channels` | Konfigurasi channel (Telegram, WhatsApp, dll) |
+| `openclaw pairing approve telegram KODE` | Approve pairing user Telegram |
+| `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser` | Aktifkan izin script PowerShell (sekali saja) |
 
 ---
 
@@ -537,7 +709,12 @@ Windows PC
 │       ├── Chat      (tanya-jawab + upload dokumen)
 │       ├── Agents    (AI agent dengan instruksi khusus)
 │       ├── Skills    (kemampuan tambahan)
-│       └── Channels  (integrasi Telegram, WhatsApp, dll)
+│       └── Channels
+│           ├── Telegram  ✅ terhubung (polling mode)
+│           └── WhatsApp  (opsional)
+│
+├── Bot Telegram      (akses dari HP kapan saja)
+│   └── @nama_bot → OpenClaw → qwen2.5:7b
 │
 ├── Dependencies
 │   ├── Node.js v24+  (wajib untuk OpenClaw)
@@ -560,7 +737,12 @@ Windows PC
 - [ ] OpenClaw berhasil dijalankan via PowerShell Administrator
 - [ ] Dashboard terbuka di `http://localhost:18789/#token=ollama`
 - [ ] Status **Health: OK** muncul di pojok kanan atas dashboard
-- [ ] Berhasil chat dengan model Qwen dalam bahasa Indonesia ✓
+- [ ] Berhasil chat dengan model Qwen di dashboard ✓
+- [ ] Bot Telegram dibuat via @BotFather, token tersimpan
+- [ ] `Set-ExecutionPolicy RemoteSigned` sudah dijalankan
+- [ ] `openclaw configure --section channels` selesai dengan **Configure complete.**
+- [ ] Dashboard Channels → Telegram → **Configured: Yes, Running: Yes** ✓
+- [ ] Pairing approved → bot Telegram merespons pesan ✓
 
 ---
 
